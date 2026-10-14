@@ -23,12 +23,17 @@ filter_unconventional = true
 filter_commits = false
 tag_pattern = "v[0-9]*"
 commit_parsers = [
+  { message = "^docs\\(changelog\\)", skip = true },
   { message = "^feat", group = "Added" },
   { message = "^fix", group = "Fixed" },
   { message = "^init", group = "Added" },
   { message = "^docs", group = "Docs" },
   { message = "^refactor", group = "Changed" },
   { message = "^style", group = "Changed" },
+  { message = "^perf", group = "Changed" },
   { message = "^test", group = "Tests" },
+  { message = "^build", group = "Chore" },
+  { message = "^ci", group = "Chore" },
   { message = "^chore", group = "Chore" },
+  { message = ".*", group = "Other" },
 ]
