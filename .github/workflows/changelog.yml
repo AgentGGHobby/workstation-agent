@@ -6,7 +6,7 @@ on:
 
 jobs:
   changelog:
-    uses: AgentGGHobby/reusable-workflows/.github/workflows/changelog.yml@hobby.v1
+    uses: AgentGGHobby/reusable-workflows/.github/workflows/changelog.yml@hobby.v2
     with:
       config: docs/cliff.toml
       changelog_path: docs/CHANGELOG.md
