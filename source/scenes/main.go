@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	fmt.Println("workstation-agent", backend.Version, "lab-os")
+	fmt.Println("workstation-agent-scenes", backend.Version)
 }

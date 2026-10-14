@@ -13,10 +13,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version-file: go.mod
 
-      - name: Build Windows binary
+      - name: Show Go version
+        run: go version
+
+      - name: Build Windows agent
         run: go build -o build/mqtt-agent-win.exe ./source/win-os
+
+      - name: Build Windows scenes binary
+        run: go build -o build/mqtt-scenes-win.exe ./source/scenes
 
       - name: Install WiX Toolset
         run: dotnet tool install --global wix
@@ -46,14 +52,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Linux binary
+      - name: Show Go version
+        run: go version
+
+      - name: Build Linux agent
         run: GOOS=linux GOARCH=amd64 go build -o build/mqtt-agent-linux ./source/linux-os
+
+      - name: Build Linux scenes binary
+        run: GOOS=linux GOARCH=amd64 go build -o build/mqtt-scenes-linux ./source/scenes
 
       - name: Build Arch package
         run: |
           mkdir -p pkg-build
           cp source/linux-os/PKGBUILD pkg-build/
           cp build/mqtt-agent-linux pkg-build/
+          cp build/mqtt-scenes-linux pkg-build/
           useradd -m builder
           chown -R builder:builder pkg-build
           cd pkg-build
@@ -63,36 +76,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mqtt-agent-linux
-          path: pkg-build/*.pkg.tar.zst
-          retention-days: 90
-
-  build-lab-os:
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:base-devel
-    steps:
-      - name: Install dependencies
-        run: pacman -Sy --noconfirm go
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Lab-OS binary
-        run: GOOS=linux GOARCH=amd64 go build -o build/mqtt-agent-lab ./source/lab-os
-
-      - name: Build Arch package
-        run: |
-          mkdir -p pkg-build
-          cp source/lab-os/PKGBUILD pkg-build/
-          cp build/mqtt-agent-lab pkg-build/
-          useradd -m builder
-          chown -R builder:builder pkg-build
-          cd pkg-build
-          su builder -c "makepkg -f --noconfirm --skipinteg"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mqtt-agent-lab
           path: pkg-build/*.pkg.tar.zst
           retention-days: 90
