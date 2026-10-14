@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.0-beta - 2026-10-14
+
+### Fixed
+
+- Lock own graphical session without polkit prompt
+
+- Prompt for env values via /dev/tty and skip debug package
+
+
 ## v0.2.0-beta - 2026-10-14
 
 ### Fixed
