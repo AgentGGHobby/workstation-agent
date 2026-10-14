@@ -6,6 +6,7 @@ arch=('x86_64')
 url="https://github.com/AgentGGHobby/workstation-agent"
 license=('MIT')
 depends=('systemd')
+options=('!debug')
 install=workstation-agent.install
 source=('mqtt-agent-linux'
         'mqtt-scenes-linux'
