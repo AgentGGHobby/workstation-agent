@@ -1,0 +1,99 @@
+ENV_DIR="/etc/workstation-agent"
+ENV_FILE="${ENV_DIR}/.env"
+
+_valid_value() {
+	[ -n "$1" ] && [[ "$1" != *"'"* ]]
+}
+
+pre_install() {
+	# Vorhandene Konfiguration bleibt unverändert, sonst würde jedes Update erneut fragen.
+	if [ -f "${ENV_FILE}" ]; then
+		return 0
+	fi
+
+	if [ ! -t 0 ]; then
+		echo "workstation-agent: Keine .env vorhanden und kein Terminal für die Abfrage. Installation abgebrochen." >&2
+		return 1
+	fi
+
+	local broker user pass scenes owner re
+	local default_owner="${SUDO_USER:-}"
+
+	echo
+	echo "=== workstation-agent: Konfiguration ==="
+
+	re='^(tcp|ssl)://[^[:space:]/]+:[0-9]+$'
+	while true; do
+		read -r -p "MQTT-Broker (z. B. tcp://192.168.178.23:1883): " broker
+		[[ "${broker}" =~ ${re} ]] && break
+		echo "Ungültig. Format: tcp://HOST:PORT" >&2
+	done
+
+	while true; do
+		read -r -p "MQTT-Benutzer: " user
+		_valid_value "${user}" && break
+		echo "Darf nicht leer sein und kein ' enthalten." >&2
+	done
+
+	while true; do
+		read -r -s -p "MQTT-Passwort: " pass
+		echo
+		_valid_value "${pass}" && break
+		echo "Darf nicht leer sein und kein ' enthalten." >&2
+	done
+
+	while true; do
+		read -r -p "Linux-Benutzer, unter dem der Agent läuft${default_owner:+ [${default_owner}]}: " owner
+		owner="${owner:-${default_owner}}"
+		if [ -n "${owner}" ] && id -u "${owner}" >/dev/null 2>&1; then
+			break
+		fi
+		echo "Benutzer existiert nicht." >&2
+	done
+
+	read -r -p "Szenen-Feature installieren? [j/N]: " scenes
+	case "${scenes}" in
+		[jJyY]*) scenes="yes" ;;
+		*) scenes="no" ;;
+	esac
+
+	install -d -m 755 "${ENV_DIR}"
+	(
+		umask 077
+		{
+			printf "MQTT_BROKER='%s'\n" "${broker}"
+			printf "MQTT_USER='%s'\n" "${user}"
+			printf "MQTT_PASSWORD='%s'\n" "${pass}"
+			printf "SCENES=%s\n" "${scenes}"
+		} > "${ENV_FILE}"
+	)
+	chown "${owner}:$(id -gn "${owner}")" "${ENV_FILE}"
+	chmod 600 "${ENV_FILE}"
+}
+
+# Die Dateiliste des Pakets steht vor pre_install fest. Wurde das Szenen-Feature
+# abgewählt, wird die Szenen-Binary deshalb nachträglich wieder entfernt.
+_apply_scenes_choice() {
+	if grep -qx 'SCENES=no' "${ENV_FILE}" 2>/dev/null; then
+		rm -f /usr/bin/workstation-agent-scenes
+	fi
+}
+
+post_install() {
+	_apply_scenes_choice
+	systemctl --global enable workstation-agent.service >/dev/null 2>&1 || true
+	echo "workstation-agent: Beim nächsten Login startet der Agent automatisch."
+	echo "workstation-agent: Sofort starten: systemctl --user start workstation-agent"
+}
+
+pre_upgrade() {
+	pre_install
+}
+
+post_upgrade() {
+	_apply_scenes_choice
+}
+
+pre_remove() {
+	systemctl --global disable workstation-agent.service >/dev/null 2>&1 || true
+}

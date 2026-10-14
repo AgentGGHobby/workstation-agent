@@ -1,0 +1,19 @@
+pkgname=workstation-agent
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="MQTT-Agent zur Fernsteuerung des Towers über Home Assistant"
+arch=('x86_64')
+url="https://github.com/AgentGGHobby/workstation-agent"
+license=('MIT')
+depends=('systemd')
+install=workstation-agent.install
+source=('mqtt-agent-linux'
+        'mqtt-scenes-linux'
+        'workstation-agent.service')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+	install -Dm755 "${srcdir}/mqtt-agent-linux" "${pkgdir}/usr/bin/workstation-agent"
+	install -Dm755 "${srcdir}/mqtt-scenes-linux" "${pkgdir}/usr/bin/workstation-agent-scenes"
+	install -Dm644 "${srcdir}/workstation-agent.service" "${pkgdir}/usr/lib/systemd/user/workstation-agent.service"
+}
