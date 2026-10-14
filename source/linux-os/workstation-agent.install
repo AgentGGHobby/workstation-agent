@@ -5,53 +5,66 @@ _valid_value() {
 	[ -n "$1" ] && [[ "$1" != *"'"* ]]
 }
 
+# pacman gibt dem Skript kein Terminal als stdin. Ein- und Ausgabe laufen deshalb direkt über /dev/tty.
+# $1 = Prompt, $2 = Name der Zielvariable, $3 = "secret" für Passworteingabe ohne Echo
+_ask() {
+	local prompt="$1" var="$2" value=""
+	printf '%s' "${prompt}" > /dev/tty
+	if [ "${3:-}" = "secret" ]; then
+		read -r -s value < /dev/tty
+		printf '\n' > /dev/tty
+	else
+		read -r value < /dev/tty
+	fi
+	printf -v "${var}" '%s' "${value}"
+}
+
 pre_install() {
 	# Vorhandene Konfiguration bleibt unverändert, sonst würde jedes Update erneut fragen.
 	if [ -f "${ENV_FILE}" ]; then
 		return 0
 	fi
 
-	if [ ! -t 0 ]; then
-		echo "workstation-agent: Keine .env vorhanden und kein Terminal für die Abfrage. Installation abgebrochen." >&2
-		return 1
+	# pacman bricht bei einem Fehler in pre_install nicht ab, deshalb nur ein Hinweis.
+	if ! ( exec < /dev/tty ) 2>/dev/null; then
+		echo "workstation-agent: Kein Terminal für die Abfrage. Es wurde keine .env angelegt, der Agent startet erst, wenn ${ENV_FILE} existiert." >&2
+		return 0
 	fi
 
 	local broker user pass scenes owner re
 	local default_owner="${SUDO_USER:-}"
 
-	echo
-	echo "=== workstation-agent: Konfiguration ==="
+	printf '\n=== workstation-agent: Konfiguration ===\n' > /dev/tty
 
 	re='^(tcp|ssl)://[^[:space:]/]+:[0-9]+$'
 	while true; do
-		read -r -p "MQTT-Broker (z. B. tcp://192.168.178.23:1883): " broker
+		_ask "MQTT-Broker (z. B. tcp://192.168.178.23:1883): " broker
 		[[ "${broker}" =~ ${re} ]] && break
-		echo "Ungültig. Format: tcp://HOST:PORT" >&2
+		echo "Ungültig. Format: tcp://HOST:PORT" > /dev/tty
 	done
 
 	while true; do
-		read -r -p "MQTT-Benutzer: " user
+		_ask "MQTT-Benutzer: " user
 		_valid_value "${user}" && break
-		echo "Darf nicht leer sein und kein ' enthalten." >&2
+		echo "Darf nicht leer sein und kein ' enthalten." > /dev/tty
 	done
 
 	while true; do
-		read -r -s -p "MQTT-Passwort: " pass
-		echo
+		_ask "MQTT-Passwort: " pass secret
 		_valid_value "${pass}" && break
-		echo "Darf nicht leer sein und kein ' enthalten." >&2
+		echo "Darf nicht leer sein und kein ' enthalten." > /dev/tty
 	done
 
 	while true; do
-		read -r -p "Linux-Benutzer, unter dem der Agent läuft${default_owner:+ [${default_owner}]}: " owner
+		_ask "Linux-Benutzer, unter dem der Agent läuft${default_owner:+ [${default_owner}]}: " owner
 		owner="${owner:-${default_owner}}"
 		if [ -n "${owner}" ] && id -u "${owner}" >/dev/null 2>&1; then
 			break
 		fi
-		echo "Benutzer existiert nicht." >&2
+		echo "Benutzer existiert nicht." > /dev/tty
 	done
 
-	read -r -p "Szenen-Feature installieren? [j/N]: " scenes
+	_ask "Szenen-Feature installieren? [j/N]: " scenes
 	case "${scenes}" in
 		[jJyY]*) scenes="yes" ;;
 		*) scenes="no" ;;
