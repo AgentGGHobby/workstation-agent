@@ -1,0 +1,11 @@
+name: Create Issues
+
+on:
+  push:
+    paths:
+      - docs/issues.md
+
+jobs:
+  create-issues:
+    uses: AgentGGHobby/reusable-workflows/.github/workflows/issues.yml@hobby.v1
+    secrets: inherit
