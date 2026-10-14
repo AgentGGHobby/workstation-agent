@@ -4,6 +4,9 @@ on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: write
+
 jobs:
   changelog:
     uses: AgentGGHobby/reusable-workflows/.github/workflows/changelog.yml@hobby.v2
