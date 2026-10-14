@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0-beta - 2026-10-14
+
+### Fixed
+
+- Reusable v2
+
+- Permisson fehler
+
+- Prompt for env values via /dev/tty in arch package
+
+
 ## v0.1.0-beta - 2026-10-14
 
 ### Added
