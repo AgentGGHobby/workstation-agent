@@ -19,20 +19,23 @@ jobs:
         run: go version
 
       - name: Build Windows agent
-        run: go build -o build/mqtt-agent-win.exe ./source/win-os
+        run: go build -ldflags "-H=windowsgui" -o build/mqtt-agent-win.exe ./source/win-os
 
       - name: Build Windows scenes binary
         run: go build -o build/mqtt-scenes-win.exe ./source/scenes
 
       - name: Install WiX Toolset
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global wix --version 5.0.2
 
       - name: Add dotnet tools to PATH
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
         shell: pwsh
 
+      - name: Add WiX UI extension
+        run: wix extension add -g WixToolset.UI.wixext/5.0.2
+
       - name: Build MSI
-        run: wix build source/win-os/installer/Product.wxs -b build -out build/mqtt-agent-win.msi
+        run: wix build source/win-os/installer/Product.wxs -ext WixToolset.UI.wixext -arch x64 -culture de-DE -b build -out build/mqtt-agent-win.msi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -65,6 +68,8 @@ jobs:
         run: |
           mkdir -p pkg-build
           cp source/linux-os/PKGBUILD pkg-build/
+          cp source/linux-os/workstation-agent.install pkg-build/
+          cp source/linux-os/workstation-agent.service pkg-build/
           cp build/mqtt-agent-linux pkg-build/
           cp build/mqtt-scenes-linux pkg-build/
           useradd -m builder

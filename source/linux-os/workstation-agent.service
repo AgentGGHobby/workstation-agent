@@ -1,0 +1,10 @@
+[Unit]
+Description=workstation-agent (MQTT)
+
+[Service]
+ExecStart=/usr/bin/workstation-agent
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
