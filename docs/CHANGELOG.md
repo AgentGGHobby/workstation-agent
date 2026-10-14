@@ -1,4 +1,26 @@
 # Changelog
 
-## Unreleased
-- ...
+## v0.1.0-beta - 2026-10-14
+
+### Added
+
+- Scaffold base structure
+
+- Add mqtt client with last will, config loader and allowlist store
+
+- Add os interface, command dispatch and agent entrypoints
+
+- Add wix msi with mqtt setup dialog and windows autostart
+
+- Add arch package with env prompt and user service
+
+
+### Fixed
+
+- Cliff.toml hardening
+
+- Reusable v2
+
+- Permisson fehler
+
+
