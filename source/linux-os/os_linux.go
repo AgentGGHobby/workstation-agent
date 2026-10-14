@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/AgentGGHobby/workstation-agent/source/core/backend/platform"
 )
@@ -23,11 +26,24 @@ func (linuxOS) Sleep() error {
 	return run("systemctl", "suspend")
 }
 
-// Lock sperrt alle Sitzungen. Auf dem Tower läuft nur ein Benutzer, und ein
-// User-Service gehört nicht zur Session-Scope, deshalb wäre lock-session ohne
-// Session-ID unzuverlässig.
+// Lock sperrt die grafische Sitzung des Benutzers, unter dem der Agent läuft.
+// lock-sessions (alle Sitzungen) verlangt eine polkit-Authentifizierung, das Sperren
+// der eigenen Sitzung nicht. Ein User-Service hat keine eigene Session-ID, deshalb
+// wird sie über die Display-Eigenschaft des Benutzers ermittelt.
 func (linuxOS) Lock() error {
-	return run("loginctl", "lock-sessions")
+	uid := strconv.Itoa(os.Getuid())
+
+	out, err := exec.Command("loginctl", "show-user", uid, "--property=Display", "--value").Output()
+	if err != nil {
+		return fmt.Errorf("linux: loginctl show-user: %w", err)
+	}
+
+	session := strings.TrimSpace(string(out))
+	if session == "" {
+		return fmt.Errorf("linux: no graphical session for uid %s", uid)
+	}
+
+	return run("loginctl", "lock-session", session)
 }
 
 func run(name string, args ...string) error {
