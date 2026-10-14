@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="workstation-agent" Manufacturer="AgentGGHobby" Version="0.1.0" UpgradeCode="C303B73F-5305-4507-906B-6C73D7E312E1" Scope="perMachine" Language="1031">
+    <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von workstation-agent ist bereits installiert." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Eingaben des MQTT-Dialogs. Das Passwort wird im Installationslog maskiert. -->
+    <Property Id="MQTT_BROKER" Secure="yes" />
+    <Property Id="MQTT_USER" Secure="yes" />
+    <Property Id="MQTT_PASSWORD" Secure="yes" Hidden="yes" />
+
+    <!-- Hilfs-Properties für die Eingabeprüfung im Dialog -->
+    <Property Id="QUOTE_CHAR" Value="&quot;" />
+    <Property Id="APOS_CHAR" Value="'" />
+    <Property Id="BACKSLASH_CHAR" Value="\" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="workstation-agent" />
+    </StandardDirectory>
+
+    <!-- Pflicht: Agent mit Autostart über den Run-Schlüssel (startet beim Login in der Benutzersitzung) -->
+    <Feature Id="AgentFeature" Title="Agent" Description="Verbindet den Rechner per MQTT mit Home Assistant. Pflichtbestandteil." Level="1" AllowAbsent="no">
+      <ComponentRef Id="AgentComponent" />
+    </Feature>
+
+    <!-- Optional: Szenen-Binary, standardmäßig nicht ausgewählt -->
+    <Feature Id="ScenesFeature" Title="Szenen" Description="Startet Programm-Szenen aus Home Assistant über eine lokale Allowlist." Level="2">
+      <ComponentRef Id="ScenesComponent" />
+    </Feature>
+
+    <!-- .env schreiben: ruft den Unterbefehl configure des frisch installierten Agenten auf -->
+    <CustomAction Id="RunConfigure" FileRef="AgentExe"
+                  ExeCommand="configure --broker &quot;[MQTT_BROKER]&quot; --user &quot;[MQTT_USER]&quot; --password &quot;[MQTT_PASSWORD]&quot;"
+                  Execute="deferred" Impersonate="no" Return="check" HideTarget="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RunConfigure" After="InstallFiles" Condition="NOT Installed AND MQTT_BROKER &lt;&gt; &quot;&quot; AND MQTT_USER &lt;&gt; &quot;&quot; AND MQTT_PASSWORD &lt;&gt; &quot;&quot;" />
+    </InstallExecuteSequence>
+
+    <UI>
+      <ui:WixUI Id="WixUI_FeatureTree" />
+
+      <!-- Ablauf bei Neuinstallation: Willkommen, Funktionen, MQTT-Verbindung, Bereit (ohne Lizenzdialog) -->
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg" Order="5" Condition="NOT Installed" />
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="5" Condition="NOT Installed" />
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="MqttDlg" Order="5" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MqttDlg" Order="5" Condition="NOT Installed" />
+
+      <Dialog Id="MqttDlg" Width="370" Height="270" Title="workstation-agent Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}MQTT-Verbindung" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="340" Height="15" Transparent="yes" NoPrefix="yes" Text="Zugangsdaten für den Mosquitto-Broker" />
+
+        <Control Id="BrokerLabel" Type="Text" X="20" Y="58" Width="330" Height="12" NoPrefix="yes" Text="MQTT-Broker (z. B. tcp://192.168.1.10:1883):" />
+        <Control Id="BrokerEdit" Type="Edit" X="20" Y="72" Width="330" Height="18" Property="MQTT_BROKER" Sunken="yes" />
+
+        <Control Id="UserLabel" Type="Text" X="20" Y="102" Width="330" Height="12" NoPrefix="yes" Text="MQTT-Benutzer:" />
+        <Control Id="UserEdit" Type="Edit" X="20" Y="116" Width="330" Height="18" Property="MQTT_USER" Sunken="yes" />
+
+        <Control Id="PasswordLabel" Type="Text" X="20" Y="146" Width="330" Height="12" NoPrefix="yes" Text="MQTT-Passwort:" />
+        <Control Id="PasswordEdit" Type="Edit" X="20" Y="160" Width="330" Height="18" Property="MQTT_PASSWORD" Password="yes" Sunken="yes" />
+
+        <Control Id="HintText" Type="Text" X="20" Y="190" Width="330" Height="36" NoPrefix="yes" Text="Der Broker muss mit tcp:// oder ssl:// beginnen und einen Port enthalten. Benutzer und Passwort dürfen kein ' und kein &quot; enthalten, das Passwort darf nicht mit \ enden. Weiter ist erst bei gültigen Eingaben möglich." />
+
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&lt; &amp;Zurück">
+          <Publish Event="NewDialog" Value="CustomizeDlg" />
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Weiter &gt;"
+                 DisableCondition="NOT ((MQTT_BROKER &lt;&lt; &quot;tcp://&quot; OR MQTT_BROKER &lt;&lt; &quot;ssl://&quot;) AND NOT (MQTT_BROKER &gt;&lt; QUOTE_CHAR) AND MQTT_USER &lt;&gt; &quot;&quot; AND NOT (MQTT_USER &gt;&lt; QUOTE_CHAR) AND NOT (MQTT_USER &gt;&lt; APOS_CHAR) AND MQTT_PASSWORD &lt;&gt; &quot;&quot; AND NOT (MQTT_PASSWORD &gt;&lt; QUOTE_CHAR) AND NOT (MQTT_PASSWORD &gt;&lt; APOS_CHAR) AND NOT (MQTT_PASSWORD &gt;&gt; BACKSLASH_CHAR))"
+                 EnableCondition="(MQTT_BROKER &lt;&lt; &quot;tcp://&quot; OR MQTT_BROKER &lt;&lt; &quot;ssl://&quot;) AND NOT (MQTT_BROKER &gt;&lt; QUOTE_CHAR) AND MQTT_USER &lt;&gt; &quot;&quot; AND NOT (MQTT_USER &gt;&lt; QUOTE_CHAR) AND NOT (MQTT_USER &gt;&lt; APOS_CHAR) AND MQTT_PASSWORD &lt;&gt; &quot;&quot; AND NOT (MQTT_PASSWORD &gt;&lt; QUOTE_CHAR) AND NOT (MQTT_PASSWORD &gt;&lt; APOS_CHAR) AND NOT (MQTT_PASSWORD &gt;&gt; BACKSLASH_CHAR)">
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Abbrechen">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
+    </UI>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
+      <Component Id="AgentComponent" Guid="*">
+        <File Id="AgentExe" Name="workstation-agent.exe" Source="mqtt-agent-win.exe" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run" Name="workstation-agent" Type="string" Value="&quot;[INSTALLFOLDER]workstation-agent.exe&quot;" />
+      </Component>
+      <Component Id="ScenesComponent" Guid="*">
+        <File Id="ScenesExe" Name="workstation-agent-scenes.exe" Source="mqtt-scenes-win.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

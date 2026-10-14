@@ -21,6 +21,10 @@ const (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "configure" {
+		os.Exit(runConfigure(os.Args[2:]))
+	}
+
 	log.Printf("workstation-agent %s (%s)", backend.Version, osID)
 
 	cfg, err := config.Load(envPath)
