@@ -14,13 +14,15 @@ import (
 	"github.com/AgentGGHobby/workstation-agent/source/core/backend/mqtt"
 )
 
-const (
-	osID     = "endeavour"
-	clientID = "workstation-agent-endeavour"
-	envPath  = "/etc/workstation-agent/.env"
-)
+const envPath = "/etc/workstation-agent/.env"
 
 func main() {
+	osID, err := detectOSID()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	clientID := "workstation-agent-" + osID
+
 	log.Printf("workstation-agent %s (%s)", backend.Version, osID)
 
 	cfg, err := config.Load(envPath)
