@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0 - 2026-10-15
+
+### Added
+
+- OS-ID aus /etc/os-release ableiten
+
+
+### Chore
+
+- Version auf 1.0.0 setzen
+
+
 ## v0.3.0-beta - 2026-10-14
 
 ### Fixed
