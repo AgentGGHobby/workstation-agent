@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="workstation-agent" Manufacturer="AgentGGHobby" Version="0.1.0" UpgradeCode="C303B73F-5305-4507-906B-6C73D7E312E1" Scope="perMachine" Language="1031">
+  <Package Name="workstation-agent" Manufacturer="AgentGGHobby" Version="1.0.0" UpgradeCode="C303B73F-5305-4507-906B-6C73D7E312E1" Scope="perMachine" Language="1031">
     <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von workstation-agent ist bereits installiert." />
     <MediaTemplate EmbedCab="yes" />
 

@@ -1,5 +1,5 @@
 pkgname=workstation-agent
-pkgver=0.1.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="MQTT-Agent zur Fernsteuerung des Towers über Home Assistant"
 arch=('x86_64')
